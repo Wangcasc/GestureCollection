@@ -373,6 +373,8 @@ class Main_Window(QtWidgets.QMainWindow):
                 self.ui.progressBar.setValue(int(self.NS.sampled*100))
                 if int(self.NS.sampled*100)==100:
                     self.NS.sampled=0
+                    QMessageBox.warning(self, "notice", "本次采集完成")
+
 
 
         except Exception as e:
