@@ -24,7 +24,6 @@ imgpoints = [] # 2d点在图像中的坐标
 
 # 读取图片并找到棋盘格角点
 
-images = [cv2.imread('calibration%d.jpg' % x) for x in range(1, 10)] # 读取一系列标定图片
 
 for img in images:
 
