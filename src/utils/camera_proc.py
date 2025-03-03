@@ -20,7 +20,8 @@ def setROI(hCamera,iWidth,iHeight,iHOffsetFOV,iVOffsetFOV):
     sRoiReslution.iHOffsetFOV = iHOffsetFOV
     sRoiReslution.iVOffsetFOV = iVOffsetFOV
     mvsdk.CameraSetImageResolution(hCamera, sRoiReslution)
-        
+
+
 class camera_task:
     def __init__(self,DevInfo,NS,record_save,frameRates):
         self.DevInfo = DevInfo
