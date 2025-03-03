@@ -51,6 +51,10 @@ class Main_Window(QtWidgets.QMainWindow):
         #采样设置##################
         #采样帧数
         self.NS.sample_frame=int(self.ui.lineEdit_sample_frame.text())
+
+        # 采样进度百分比
+        self.NS.sampled= 0
+
         print('采样帧数为{}'.format(self.NS.sample_frame))
         #保存路径
         self.fpath = self.ui.lineEdit_sample_save_path.text()
@@ -67,6 +71,7 @@ class Main_Window(QtWidgets.QMainWindow):
         self.timer_imshow=QtCore.QTimer(self)
         self.timer_imshow.timeout.connect(self.update_frames)
         self.timer_imshow.start(1)  # 每33ms检查一次新帧
+        self.fakeTime=0 #理论系统时间
         
         # self.timer_fault=QtCore.QTimer(self)
         # self.timer_fault.timeout.connect(self.time_out)
@@ -113,6 +118,8 @@ class Main_Window(QtWidgets.QMainWindow):
         self.label_RGB_width = self.ui.label_RGB.geometry().width()
         print("RGB Height: {}".format(self.label_RGB_height))
         print("RGB Width: {}".format(self.label_RGB_width))
+
+        self.ui.progressBar.setValue(100)
 
 
         #相机##################
@@ -333,6 +340,7 @@ class Main_Window(QtWidgets.QMainWindow):
         print('姓名为{}'.format(self.name))
 
     def update_frames(self):
+        self.fakeTime+=1
         #从管道里面读取数据，初始化的时候管道和show_label是一一对应的
         try:
             for i, parent_conn in enumerate(self.parent_conns):
@@ -352,6 +360,21 @@ class Main_Window(QtWidgets.QMainWindow):
                     else:
                         # self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["realsence"]))
                         pass
+
+            if self.fakeTime%500==0:
+                for i, DevInfo in enumerate(self.DevList):
+                    if self.record_save[DevInfo.GetSn()] == 0: # 不在记录
+                        self.ui.pushButton_regist.setEnabled(True)  # 启用注册按钮
+                # else:
+                    # self.ui.pushButton_regist.setEnabled(False)  # 禁用注册按钮
+            # print(self.fakeTime)
+            if int(self.NS.sampled*100)%10==0 and int(self.NS.sampled*100)!=0 :
+                # print("sampled:", int(self.NS.sampled*100))
+                self.ui.progressBar.setValue(int(self.NS.sampled*100))
+                if int(self.NS.sampled*100)==100:
+                    self.NS.sampled=0
+
+
         except Exception as e:
             # print("Exception:", e)
             # print("update_frames failed")
@@ -394,6 +417,8 @@ class Main_Window(QtWidgets.QMainWindow):
 
         for devInfo in self.DevList:
             self.record_save[devInfo.GetSn()] = 1
+
+        self.ui.pushButton_regist.setEnabled(False) # 禁用注册按钮
 
         self.record_save["realsence"] = 1
 

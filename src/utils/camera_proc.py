@@ -21,7 +21,6 @@ def setROI(hCamera,iWidth,iHeight,iHOffsetFOV,iVOffsetFOV):
     sRoiReslution.iVOffsetFOV = iVOffsetFOV
     mvsdk.CameraSetImageResolution(hCamera, sRoiReslution)
 
-
 class camera_task:
     def __init__(self,DevInfo,NS,record_save,frameRates):
         self.DevInfo = DevInfo
@@ -139,7 +138,6 @@ class camera_task:
 
                 if self.DevInfo.GetSn() == "044011420148":
                     frame=cv2.flip(frame,0)
-                    print(num_frames)
                 elif self.DevInfo.GetSn() == "044030620196":  # 044062320105   042092320674
                     frame=cv2.flip(frame,0)
                 elif self.DevInfo.GetSn() == "044062320120":
@@ -168,6 +166,9 @@ class camera_task:
 
                 if self.record_save[self.DevInfo.GetSn()]==1:
                     self.imgs_buffer.append(frame)
+                    # 记录采集进度
+                    if self.DevInfo.GetSn() == "044011420148":
+                        self.NS.sampled = len(self.imgs_buffer)/self.NS.sample_frame
                     if len(self.imgs_buffer) == 1:
                         start_time2 = time.time()
                     # print(len(self.imgs_buffer))
