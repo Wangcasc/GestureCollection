@@ -58,7 +58,7 @@ class camera_task:
         mvsdk.CameraSetTriggerMode(self.hCamera, 2)#2是外部触发
         # 手动曝光，曝光时间30ms
         mvsdk.CameraSetAeState(self.hCamera, 0)#0是手动曝光
-        mvsdk.CameraSetExposureTime(self.hCamera,8 * 1000)#8是曝光时间（ms）
+        mvsdk.CameraSetExposureTime(self.hCamera,30 * 1000)#10是曝光时间（ms）
         # if self.DevInfo.GetSn()=="044011420148":
         #     mvsdk.CameraSetGain(self.hCamera, iRGain=109, iGGain=100, iBGain=114)
         # else:
@@ -139,21 +139,26 @@ class camera_task:
                 if self.DevInfo.GetSn() == "044011420148":
                     frame=cv2.flip(frame,0)
                 elif self.DevInfo.GetSn() == "044030620196":  # 044062320105   042092320674
-                    frame=cv2.flip(frame,0)
+                    frame=cv2.flip(frame,1)
+                    # pass
                 elif self.DevInfo.GetSn() == "044062320120":
-                    frame=cv2.flip(frame,1)
+                    frame=cv2.flip(frame,0)
+                    # pass
                 elif self.DevInfo.GetSn() == "044062320129":
-                    frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
-                    frame=cv2.flip(frame,1)
-                elif self.DevInfo.GetSn() == "044030620195":
+                    # pass
                     frame=cv2.rotate(frame,cv2.ROTATE_90_COUNTERCLOCKWISE)
                     frame=cv2.flip(frame,1)
+                elif self.DevInfo.GetSn() == "044030620195":
+                    frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
+                    frame=cv2.flip(frame,1)
+                    # pas
                 elif self.DevInfo.GetSn() == "044062320137":
                     frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
                     frame=cv2.flip(frame,1)
                 elif self.DevInfo.GetSn() == "044062320105":
-                    frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
+                    frame=cv2.rotate(frame,cv2.ROTATE_90_COUNTERCLOCKWISE)
                     frame=cv2.flip(frame,1)
+                    # pass
                 elif self.DevInfo.GetSn() == "044030620196":
                     pass
 
