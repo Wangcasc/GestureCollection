@@ -115,20 +115,20 @@ class EventCamera:
             frame_show = cv2.resize(frame_show, (160, 160))
             self.pipe.send(frame_show)
 
-            # 计算帧率
-            self.num_frames_show += 1
-            elapsed_time = time.time() - self.start_time
-            if elapsed_time > 0:
-                fps = self.num_frames_show / elapsed_time
-            else:
-                fps = 0
-            if self.num_frames_show > 60:
-                self.num_frames_show = 0
-                self.start_time = time.time()
-
-            # print("fps:", fps)
-
-            self.frameRates["event"] = fps
+            # # 计算帧率
+            # self.num_frames_show += 1
+            # elapsed_time = time.time() - self.start_time
+            # if elapsed_time > 0:
+            #     fps = self.num_frames_show / elapsed_time
+            # else:
+            #     fps = 0
+            # if self.num_frames_show > 60:
+            #     self.num_frames_show = 0
+            #     self.start_time = time.time()
+            #
+            # # print("fps:", fps)
+            #
+            # self.frameRates["event"] = fps
         except Exception as e:
             print("Failed to preview events: ", e)
 
@@ -221,7 +221,7 @@ def runEventCamera(pipe,stop_event,NS,record_save,frameRates):
 if __name__ == '__main__':
     # camera = dv.io.CameraCapture()
     visualizer = dv.visualization.EventVisualizer((640,480))
-    reader = dv.io.MonoCameraRecording(r"D:\apycharmblackhorse\_01_GAdevice\_01_data_sample_process_\data\img\1_1_1_1_1\events\event.aedat4")
+    reader = dv.io.MonoCameraRecording(r"C:\Users\Administrator.DESKTOP-ATGBNLB\Desktop\dataCollectionCode\GestureCollection\data\img\1_1_1_1_1\events\event.aedat4")
 
     cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     # Run the loop while camera is still connected
@@ -249,7 +249,7 @@ if __name__ == '__main__':
 
     # Create an event slicer, this will only be used events only camera
     slicer = dv.EventStreamSlicer()
-    slicer.doEveryTimeInterval(datetime.timedelta(milliseconds=33), preview_events)
+    slicer.doEveryTimeInterval(datetime.timedelta(milliseconds=1), preview_events)
 
     while reader.isRunning():
         # Read batch of events

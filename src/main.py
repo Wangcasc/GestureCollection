@@ -24,6 +24,7 @@ from utils.utils import Utils
 from utils.camera_proc import *
 from utils.camera_proc_realsence import runRealsence
 from utils.camera_proc_event import runEventCamera
+from utils.camera_ZED import runZED
 
 from multiprocessing import Pipe,Event,Process,Manager
 
@@ -189,51 +190,50 @@ class Main_Window(QtWidgets.QMainWindow):
                 return
 
 
-        #realsence相机########################################################################################
-        try:
-            # 创建context对象
-            ctx = rs.context()
-
-            # 列出所有连接的设备
-            devices = ctx.query_devices()
-
-            # 检查是否有连接的设备
-            if len(devices) > 0:
-                print("找到了RealSense设备。")
-
-                parent_conn, child_conn = Pipe()  # 设置管道
-                parent_conn_2, child_conn_2 = Pipe()  # 设置管道
-                stop_event = Event()  # 设置停止event
-                print("realsence设备")
-                # 记录每个设备的储存标志位 0显示 1缓存后保存
-                self.record_save["realsence"] = 0
-                # 每个相机的帧率
-                self.frameRates["realsence"] = 0
-                # self.frameRates["realsence_Depth"] = 0
-
-
-
-                process = Process(target=runRealsence,
-                                  args=(child_conn,child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
-                process.start()
-
-                self.show_windows.append(self.ui.label_realsense_RGB)
-                self.show_windows.append(self.ui.label_realsense_Depth)
-                self.frameRates_label.append(self.ui.label_frameRates_realsnece_1)
-                self.frameRates_label.append(self.ui.label_frameRates_realsnece_2)
-
-                self.parent_conns.append(parent_conn)
-                self.parent_conns.append(parent_conn_2)
-                self.stop_events.append(stop_event)
-                self.processes.append(process)
-
-        except Exception as e:
-            print("Exception", e)
-            print("Process realsence failed")
-        time.sleep(1)
+        # #realsence相机########################################################################################
+        # try:
+        #     # 创建context对象
+        #     ctx = rs.context()
+        #
+        #     # 列出所有连接的设备
+        #     devices = ctx.query_devices()
+        #
+        #     # 检查是否有连接的设备
+        #     if len(devices) > 0:
+        #         print("找到了RealSense设备。")
+        #
+        #         parent_conn, child_conn = Pipe()  # 设置管道
+        #         parent_conn_2, child_conn_2 = Pipe()  # 设置管道
+        #         stop_event = Event()  # 设置停止event
+        #         print("realsence设备")
+        #         # 记录每个设备的储存标志位 0显示 1缓存后保存
+        #         self.record_save["realsence"] = 0
+        #         # 每个相机的帧率
+        #         self.frameRates["realsence"] = 0
+        #         # self.frameRates["realsence_Depth"] = 0
+        #
+        #
+        #
+        #         process = Process(target=runRealsence,
+        #                           args=(child_conn,child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
+        #         process.start()
+        #
+        #         self.show_windows.append(self.ui.label_realsense_RGB)
+        #         self.show_windows.append(self.ui.label_realsense_Depth)
+        #         self.frameRates_label.append(self.ui.label_frameRates_realsnece_1)
+        #         self.frameRates_label.append(self.ui.label_frameRates_realsnece_2)
+        #
+        #         self.parent_conns.append(parent_conn)
+        #         self.parent_conns.append(parent_conn_2)
+        #         self.stop_events.append(stop_event)
+        #         self.processes.append(process)
+        #
+        # except Exception as e:
+        #     print("Exception", e)
+        #     print("Process realsence failed")
+        # time.sleep(1)
 
         # print("parent_conns:", len(self.parent_conns))
-
         #事件相机########################################################################################
         try:
             cameras = dv.io.discoverDevices()
@@ -260,6 +260,34 @@ class Main_Window(QtWidgets.QMainWindow):
         except Exception as e:
             print("Exception", e)
             print("Process event failed")
+
+        #ZED相机########################################################################################
+        try:
+            parent_conn, child_conn = Pipe()  # 设置管道
+            parent_conn_2, child_conn_2 = Pipe()  # 设置管道
+            stop_event = Event()  # 设置停止event
+            print("ZED设备")
+            # 记录每个设备的储存标志位 0显示 1缓存后保存
+            self.record_save["ZED"] = 0
+            # 每个相机的帧率
+            self.frameRates["ZED"] = 0
+
+            process = Process(target=runZED, args=(child_conn, child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
+            process.start()
+
+            self.show_windows.append(self.ui.label_ZED_RGB)
+            self.show_windows.append(self.ui.label_ZED_Depth)
+            self.frameRates_label.append(self.ui.label_frameRates_ZED)
+            # self.frameRates_label.append(self.ui.label_frameRates_ZED_2)
+
+            self.parent_conns.append(parent_conn)
+            self.parent_conns.append(parent_conn_2)
+            self.stop_events.append(stop_event)
+            self.processes.append(process)
+
+        except Exception as e:
+            print("Exception", e)
+            print("Process ZED failed")
 
 
 
@@ -352,14 +380,18 @@ class Main_Window(QtWidgets.QMainWindow):
                     frame = parent_conn.recv()
                     # print("frame:", frame.shape)
 
-                    frame = QImage(frame, self.label_RGB_height, self.label_RGB_width, QImage.Format_RGB888)
+                    frame = cv2.resize(frame, (self.show_windows[i].width(), self.show_windows[i].height()))
+
+                    frame = QImage(frame, self.show_windows[i].width(),self.show_windows[i].height(),self.show_windows[i].width()*3, QImage.Format_RGB888)
                     img = QPixmap.fromImage(frame)
+                    # if self.show_windows[i].width()>300:
+                    #     print("show_windows[i].width():", self.show_windows[i].width())
                     self.show_windows[i].setPixmap(img)
-                    if i <=len(self.DevList)-1:
+                    if i <=len(self.DevList-1):
                         self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates[self.DevList[i].GetSn()]))
-                    else:
-                        # self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["realsence"]))
-                        pass
+                    # else:
+                    #     self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["ZED"])) # 没理清楚pipe数量和label数量
+                    #     pass
 
             if self.fakeTime%500==0:
                 for i, DevInfo in enumerate(self.DevList):
@@ -476,14 +508,14 @@ class Main_Window(QtWidgets.QMainWindow):
     #         thread.save = 1
     #     self.timer_fault.stop()
 
-    def show_frame(self, lst):
-        frame = lst[0]
-        label = lst[1]
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        frame = cv2.resize(frame, (self.label_RGB_height, self.label_RGB_width))
-        frame = QImage(frame, self.label_RGB_height, self.label_RGB_width, QImage.Format_RGB888)
-        img = QPixmap.fromImage(frame)
-        label.setPixmap(img)
+    # def show_frame(self, lst):
+    #     frame = lst[0]
+    #     label = lst[1]
+    #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #     frame = cv2.resize(frame, (self.label_RGB_height, self.label_RGB_width))
+    #     frame = QImage(frame, self.label_RGB_height, self.label_RGB_width, QImage.Format_RGB888)
+    #     img = QPixmap.fromImage(frame)
+    #     label.setPixmap(img)
 
     def closeEvent(self, event):
         self.timer_imshow.stop()

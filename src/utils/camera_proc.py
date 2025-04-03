@@ -58,7 +58,7 @@ class camera_task:
         mvsdk.CameraSetTriggerMode(self.hCamera, 2)#2是外部触发
         # 手动曝光，曝光时间30ms
         mvsdk.CameraSetAeState(self.hCamera, 0)#0是手动曝光
-        mvsdk.CameraSetExposureTime(self.hCamera,30 * 1000)#10是曝光时间（ms）
+        mvsdk.CameraSetExposureTime(self.hCamera,4 * 1000)#10是曝光时间（ms）
         # if self.DevInfo.GetSn()=="044011420148":
         #     mvsdk.CameraSetGain(self.hCamera, iRGain=109, iGGain=100, iBGain=114)
         # else:

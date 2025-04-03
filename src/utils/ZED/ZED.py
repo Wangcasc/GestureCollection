@@ -72,27 +72,29 @@ def main():
     zed = sl.Camera()
 
     init_parameters = sl.InitParameters()
-    init_parameters.camera_resolution = sl.RESOLUTION.AUTO
+    init_parameters.camera_resolution = sl.RESOLUTION.AUTO # 相机分辨率设置
     init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
-    parse_args(init_parameters)
+    # parse_args(init_parameters)
 
     # Open the camera
     returned_state = zed.open(init_parameters)
     if returned_state != sl.ERROR_CODE.SUCCESS:
         print("Camera Open", returned_state, "Exit program.")
         exit()
+    else:
+        print("Camera Opened Successfully")
 
-    imWndName = "Image"
-    depthWndName = "Depth"
-    ROIWndName = "ROI"
-    cv2.namedWindow(imWndName, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(ROIWndName, cv2.WINDOW_NORMAL)
-    cv2.namedWindow(depthWndName, cv2.WINDOW_NORMAL)
+    # imWndName = "Image"
+    # depthWndName = "Depth"
+    # ROIWndName = "ROI"
+    # cv2.namedWindow(imWndName, cv2.WINDOW_NORMAL)
+    # cv2.namedWindow(ROIWndName, cv2.WINDOW_NORMAL)
+    # cv2.namedWindow(depthWndName, cv2.WINDOW_NORMAL)
 
-    print("Press 'a' to apply the ROI")
-    print("Press 'r' to reset the ROI")
-    print("Press 's' to save the ROI as image file to reload it later")
-    print("Press 'l' to load the ROI from an image file")
+    # print("Press 'a' to apply the ROI")
+    # print("Press 'r' to reset the ROI")
+    # print("Press 's' to save the ROI as image file to reload it later")
+    # print("Press 'l' to load the ROI from an image file")
 
     resolution = zed.get_camera_information().camera_configuration.resolution
 
@@ -103,12 +105,12 @@ def main():
     mask_name = "Mask.png"
     mask_roi = sl.Mat(resolution.width, resolution.height, sl.MAT_TYPE.U8_C1, sl.MEM.CPU)
 
-    roi_running = False
-    roi_param = sl.RegionOfInterestParameters()
-    # roi_param.auto_apply = True
-    roi_param.depth_far_threshold_meters = 2.5
-    roi_param.image_height_ratio_cutoff = 0.5
-    zed.start_region_of_interest_auto_detection(roi_param)
+    # roi_running = True
+    # roi_param = sl.RegionOfInterestParameters()
+    # # roi_param.auto_apply = True
+    # roi_param.depth_far_threshold_meters = 2.5 # fareset distance to consider
+    # roi_param.image_height_ratio_cutoff = 0.5  # ratio of the image height to consider
+    # zed.start_region_of_interest_auto_detection(roi_param)
 
     # Capture new images until 'q' is pressed
     key = ' '
@@ -117,44 +119,48 @@ def main():
         returned_state = zed.grab()
         if returned_state == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
-            zed.retrieve_image(zed_image, sl.VIEW.LEFT)
+            zed.retrieve_image(zed_image, sl.VIEW.SIDE_BY_SIDE) # SIDE_BY_SIDE, LEFT, RIGHT
             zed.retrieve_image(zed_depth_image, sl.VIEW.DEPTH)
 
-            status = zed.get_region_of_interest_auto_detection_status()
-            if roi_running:
-                text = "Region of interest auto detection is running\r"
-                if status == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.READY:
-                    print(text, "Region of interest auto detection is done!   ")
-                    zed.getRegionOfInterest(mask_roi)
-                    cvMaskROI = mask_roi.get_data()
-                    cv2.imshow(ROIWndName, cvMaskROI)
+            # status = zed.get_region_of_interest_auto_detection_status()
+            # if roi_running:
+            #     text = "Region of interest auto detection is running\r"
+            #     if status == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.READY:
+            #         print(text, "Region of interest auto detection is done!   ")
+            #         zed.getRegionOfInterest(mask_roi)
+            #         cvMaskROI = mask_roi.get_data()
+            #         cv2.imshow("roi", cvMaskROI)
 
-            roi_running = (status == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.RUNNING)
+            # roi_running = (status == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.RUNNING)
 
             cvImage = zed_image.get_data()
             cvDepthImage = zed_depth_image.get_data()
-            cv2.imshow(imWndName, cvImage)
-            cv2.imshow(depthWndName, cvDepthImage)
 
-        key = cv2.waitKey(15)
+            cvImage=cv2.resize(cvImage,(0,0),fx=0.5,fy=0.5)
+            cvDepthImage=cv2.resize(cvDepthImage,(0,0),fx=0.5,fy=0.5)
 
-        # Apply Current ROI
-        if key == 'r': #Reset ROI
-            if not roi_running:
-                emptyROI = sl.Mat()
-                zed.setRegionOfInterest(emptyROI)
-            print("Resetting Auto ROI detection")
-            zed.startRegionOfInterestAutoDetection(roi_param)
-        elif key == 's' and mask_roi.is_init():
-            print("Saving ROI to", mask_name)
-            mask_roi.write(mask_name)
-        elif key == 'l':
-            # Load the mask from a previously saved file
-            tmp = cv2.imread(mask_name, cv2.IMREAD_GRAYSCALE)
-            if not tmp.empty():
-                slROI = sl.Mat(sl.Resolution(tmp.cols, tmp.rows), sl.MAT_TYPE.U8_C1, tmp.data, tmp.step)
-                zed.set_region_of_interest(slROI)
-            print(mask_name, "could not be found")
+            cv2.imshow("rgb", cvImage)
+            cv2.imshow("depth", cvDepthImage)
+
+        key = cv2.waitKey(5)
+
+        # # Apply Current ROI
+        # if key == 'r': #Reset ROI
+        #     if not roi_running:
+        #         emptyROI = sl.Mat()
+        #         zed.setRegionOfInterest(emptyROI)
+        #     print("Resetting Auto ROI detection")
+        #     zed.startRegionOfInterestAutoDetection(roi_param)
+        # elif key == 's' and mask_roi.is_init():
+        #     print("Saving ROI to", mask_name)
+        #     mask_roi.write(mask_name)
+        # elif key == 'l':
+        #     # Load the mask from a previously saved file
+        #     tmp = cv2.imread(mask_name, cv2.IMREAD_GRAYSCALE)
+        #     if not tmp.empty():
+        #         slROI = sl.Mat(sl.Resolution(tmp.cols, tmp.rows), sl.MAT_TYPE.U8_C1, tmp.data, tmp.step)
+        #         zed.set_region_of_interest(slROI)
+        #     print(mask_name, "could not be found")
 
     # Exit
     zed.close()
@@ -162,12 +168,12 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
-    parser.add_argument('--ip_address', type=str, help='IP Adress, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
-    parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
-    opt = parser.parse_args()
-    if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
-        print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
-        exit()
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
+    # parser.add_argument('--ip_address', type=str, help='IP Adress, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
+    # parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
+    # opt = parser.parse_args()
+    # if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
+    #     print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
+    #     exit()
     main()
