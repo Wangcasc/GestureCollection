@@ -4,6 +4,7 @@
 
 import os
 import sys
+from utils import mvsdk
 #将当前工作目录修改为上级目录
 sys.path.append("../")
 sys.path.append("../../")
@@ -112,6 +113,7 @@ class Main_Window(QtWidgets.QMainWindow):
         self.ui.pushButton_regist.clicked.connect(self.regist)
         #删除
         self.ui.pushButton_del.clicked.connect(self.del_sample)
+
 
 
         #显示
