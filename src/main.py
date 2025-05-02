@@ -46,6 +46,7 @@ class Main_Window(QtWidgets.QMainWindow):
         self.NS=Manager().Namespace() #用于进程间通信Manager命名空间,所有全局变量都放在这里
         self.record_save = Manager().dict() #用于进程间通信Manager字典
         self.frameRates = Manager().dict() #用于进程间通信Manager字典,记录各个相机的帧率
+        self.ROI=Manager().dict() #用于进程间通信Manager字典,记录各个相机的ROI
 
 
 
@@ -56,6 +57,7 @@ class Main_Window(QtWidgets.QMainWindow):
 
         # 采样进度百分比
         self.NS.sampled= 0
+
 
         print('采样帧数为{}'.format(self.NS.sample_frame))
         #保存路径
@@ -143,6 +145,8 @@ class Main_Window(QtWidgets.QMainWindow):
                 self.record_save[DevInfo.GetSn()] = 0
                 #每个相机的帧率
                 self.frameRates[DevInfo.GetSn()] = 0
+                # 每个相机的ROI
+                self.ROI[DevInfo.GetSn()] = [0, 0]
 
 
                 if DevInfo.GetSn() == "044011420148":  # 1  041182220233  044062320120
@@ -165,7 +169,7 @@ class Main_Window(QtWidgets.QMainWindow):
                     self.show_windows.append(self.ui.label_RGB_5)
                     self.frameRates_label.append(self.ui.label_frameRates_5)
 
-                elif DevInfo.GetSn() == "043051920299": #inf043051920299
+                elif DevInfo.GetSn() == "043051920299": #inf 043051920299
                     self.show_windows.append(self.ui.label_infrared)
                     self.frameRates_label.append(self.ui.label_frameRates_inf)
 
@@ -178,12 +182,12 @@ class Main_Window(QtWidgets.QMainWindow):
                     self.frameRates_label.append(self.ui.label_frameRates_7)
 
 
-                process = Process(target=run_camera, args=(DevInfo,child_conn,stop_event,self.NS,self.record_save,self.frameRates))
+                process = Process(target=run_camera, args=(DevInfo,child_conn,stop_event,self.NS,self.record_save,self.frameRates,self.ROI))
                 process.start()
                 self.parent_conns.append(parent_conn)
                 self.stop_events.append(stop_event)
                 self.processes.append(process)
-                time.sleep(1)
+                # time.sleep(1)
 
 
 
@@ -389,7 +393,8 @@ class Main_Window(QtWidgets.QMainWindow):
                     # if self.show_windows[i].width()>300:
                     #     print("show_windows[i].width():", self.show_windows[i].width())
                     self.show_windows[i].setPixmap(img)
-                    if i <=len(self.DevList-1):
+                    if i <=len(self.DevList):
+                        # print("帧率：{:.2f}".format(self.frameRates[self.DevList[i].GetSn()]))
                         self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates[self.DevList[i].GetSn()]))
                     # else:
                     #     self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["ZED"])) # 没理清楚pipe数量和label数量
@@ -459,6 +464,8 @@ class Main_Window(QtWidgets.QMainWindow):
         self.record_save["realsence"] = 1
 
         self.record_save["event"] = 1
+
+        self.record_save["ZED"] = 1
 
         # self.timer_fault.start(2000)
         # print("timer start")

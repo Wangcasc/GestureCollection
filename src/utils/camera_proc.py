@@ -22,11 +22,12 @@ def setROI(hCamera,iWidth,iHeight,iHOffsetFOV,iVOffsetFOV):
     mvsdk.CameraSetImageResolution(hCamera, sRoiReslution)
 
 class camera_task:
-    def __init__(self,DevInfo,NS,record_save,frameRates):
+    def __init__(self,DevInfo,NS,record_save,frameRates,ROI):
         self.DevInfo = DevInfo
         self.NS = NS
         self.record_save = record_save
         self.frameRates = frameRates
+        self.ROI = ROI
         #缓存
         self.imgs_buffer = []
         self.executor = futures.ThreadPoolExecutor(max_workers=1)
@@ -49,16 +50,26 @@ class camera_task:
         else:
             mvsdk.CameraSetIspOutFormat(self.hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
 
-
-        if self.DevInfo.GetSn() == "044011420148":  # 041182220233  044062320120
-            setROI(self.hCamera, 800, 800, 430, 112)
-        else:
-            setROI(self.hCamera, 800, 800, 240, 112)
         # 相机模式切换成连续采集
         mvsdk.CameraSetTriggerMode(self.hCamera, 2)#2是外部触发
         # 手动曝光，曝光时间30ms
         mvsdk.CameraSetAeState(self.hCamera, 0)#0是手动曝光
-        mvsdk.CameraSetExposureTime(self.hCamera,4 * 1000)#10是曝光时间（ms）
+
+
+        if self.DevInfo.GetSn() == "044011420148":  # 041182220233  044062320120
+            # setROI(self.hCamera, 800, 800, 560, 112)
+            mvsdk.CameraSetExposureTime(self.hCamera, 6 * 1000)  # 10是曝光时间（ms）
+        else:
+            mvsdk.CameraSetExposureTime(self.hCamera, 10 * 1000)
+        # if self.DevInfo.GetSn() == "044030620196":  # 044062320105   042092320674
+        #     setROI(self.hCamera, 800, 800, 240, 112)
+        # elif self.DevInfo.GetSn() == "044062320120":
+        #     setROI(self.hCamera, 800, 800, 240, 112)
+        # else:
+        #     setROI(self.hCamera, 800, 800, 240, 112)
+
+
+
         # if self.DevInfo.GetSn()=="044011420148":
         #     mvsdk.CameraSetGain(self.hCamera, iRGain=109, iGGain=100, iBGain=114)
         # else:
@@ -70,6 +81,7 @@ class camera_task:
         # 分配RGB buffer，用来存放ISP输出的图像
         # 备注：从相机传输到PC端的是RAW数据，在PC端通过软件ISP转为RGB数据（如果是黑白相机就不需要转换格式，但是ISP还有其它处理，所以也需要分配这个buffer）
         self.pFrameBuffer = mvsdk.CameraAlignMalloc(FrameBufferSize, 16)
+        self.setCrop()
 
 
 
@@ -109,11 +121,31 @@ class camera_task:
         print('{}采集完成'.format(camera))
         # time.sleep(0.1)
 
+    def setCrop(self):
+        if self.DevInfo.GetSn()=="044011420148":   #041182220233  044062320120
+            setROI(self.hCamera, 1024, 1024, 448, 112)
+        elif self.DevInfo.GetSn()=="044030620196":  #044062320105   042092320674
+            setROI(self.hCamera, 800, 800, 240, 112)
+        elif self.DevInfo.GetSn()=="044062320120":
+            setROI(self.hCamera, 800, 800, 240, 112)
+        elif self.DevInfo.GetSn()=="044062320129":
+            setROI(self.hCamera, 800, 800, 200, 312)
+        elif self.DevInfo.GetSn()=="044030620195":
+            setROI(self.hCamera, 800, 800, 240, 112)
+        elif self.DevInfo.GetSn()=="043051920299":
+            setROI(self.hCamera, 1024, 1024, 560+120, 140)
+        elif self.DevInfo.GetSn()=="044062320137":
+            setROI(self.hCamera, 800, 800, 100, 112)
+        elif self.DevInfo.GetSn()=="044062320105":
+            setROI(self.hCamera, 800, 800, 380, 112)
+
+
     def run(self,pipe,stop_event):
         num_frames = 0
         start_time = time.time()
         while not stop_event.is_set():
             try:
+
                 pRawData, FrameHead = mvsdk.CameraGetImageBuffer(self.hCamera, 200)
                 mvsdk.CameraImageProcess(self.hCamera, pRawData, self.pFrameBuffer, FrameHead)
                 mvsdk.CameraReleaseImageBuffer(self.hCamera, pRawData)
@@ -138,6 +170,7 @@ class camera_task:
 
                 if self.DevInfo.GetSn() == "044011420148":
                     frame=cv2.flip(frame,0)
+
                 elif self.DevInfo.GetSn() == "044030620196":  # 044062320105   042092320674
                     frame=cv2.flip(frame,1)
                     # pass
@@ -161,7 +194,10 @@ class camera_task:
                     # pass
                 elif self.DevInfo.GetSn() == "044030620196":
                     pass
-
+                elif self.DevInfo.GetSn() == "043051920299":
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
+                    frame=cv2.flip(frame,1)
+                    # pass
                 # frame = cv2.resize(frame, (640,480), interpolation = cv2.INTER_LINEAR)
                 if num_frames % 10 == 0:
                     frame_show = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -200,8 +236,8 @@ class camera_task:
 #     camera = camera_task(index)
 #     camera.run(pipe,stop_event)
     
-def run_camera(devinfo,pipe,stop_event,NS,record_save,frameRates):
-    camera = camera_task(devinfo,NS,record_save,frameRates)
+def run_camera(devinfo,pipe,stop_event,NS,record_save,frameRates,ROI):
+    camera = camera_task(devinfo,NS,record_save,frameRates,ROI)
     camera.run(pipe,stop_event) 
     
     

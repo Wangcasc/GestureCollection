@@ -113,6 +113,8 @@ class EventCamera:
             color_image = color_image[:, 80:560, :]
             frame_show = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
             frame_show = cv2.resize(frame_show, (160, 160))
+            frame_show = cv2.rotate(frame_show, cv2.ROTATE_180)
+            # print("frame_show.shape",frame_show.shape)
             self.pipe.send(frame_show)
 
             # # 计算帧率
@@ -185,6 +187,7 @@ class EventCamera:
 
                     # 切片展示
                     self.slicer.accept(events)
+                    # print("events.shape",events)
 
                     if self.record_save["event"] == 1:
                         #触发事件存储

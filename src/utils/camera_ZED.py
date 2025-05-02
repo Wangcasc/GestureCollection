@@ -28,9 +28,17 @@ class ZEDTask:
         self.zed = sl.Camera()
 
         init_parameters = sl.InitParameters()
-        init_parameters.camera_resolution = sl.RESOLUTION.AUTO  # 相机分辨率设置
-        init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
+        init_parameters.camera_resolution = sl.RESOLUTION.HD720  # 相机分辨率设置
+        init_parameters.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+        init_parameters.camera_fps = 60
         # parse_args(init_parameters)
+
+        # self.zed.set_camera_settings(sl.VIDEO_SETTINGS.EXPOSURE, 50)
+        # Set white balance to 4600K
+        # self.zed.set_camera_settings(sl.VIDEO_SETTINGS.WHITE_BALANCE, 4600)
+        # Reset to auto exposure
+        # self.zed.set_camera_settings(sl.VIDEO_SETTINGS.EXPOSURE, -1)
+
 
         # Open the camera
         returned_state = self.zed.open(init_parameters)
@@ -109,11 +117,20 @@ class ZEDTask:
         num_frames = 0
         start_time = time.time()
 
+        # 相机分辨率为：
+        print("Camera Resolution:",self.zed.get_camera_information().camera_configuration.resolution.width,
+              self.zed.get_camera_information().camera_configuration.resolution.height)
+        # 相机帧率为：
+        print("Camera FPS:",self.zed.get_camera_information())
+
         while not stop_event.is_set():
             try:
                 # print(num_frames)
 
                 color_image,depth_image ,ret= self.grab()
+
+                # color_image是
+
                 if ret:
                     # color_image = cv2.flip(color_image, 1)
                     # depth_image = cv2.flip(depth_image, 1)
@@ -131,7 +148,7 @@ class ZEDTask:
                         num_frames=0
                         start_time=time.time()
 
-                    # print("fps:",fps)
+                    print("fps:",fps)
                     # print(num_frames)
 
                     if num_frames % 2 == 0:
@@ -149,6 +166,7 @@ class ZEDTask:
 
                     if self.record_save["ZED"] == 1:
                         num+=1
+
                         self.RGB_buffer.append(color_image.copy())
                         self.Depth_buffer.append(depth_image.copy())
                         # self.Depth_Color_buffer.append(depth_color_image.copy())
