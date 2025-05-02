@@ -169,9 +169,7 @@ class Main_Window(QtWidgets.QMainWindow):
                     self.show_windows.append(self.ui.label_RGB_5)
                     self.frameRates_label.append(self.ui.label_frameRates_5)
 
-                elif DevInfo.GetSn() == "043051920299": #inf 043051920299
-                    self.show_windows.append(self.ui.label_infrared)
-                    self.frameRates_label.append(self.ui.label_frameRates_inf)
+
 
                 elif DevInfo.GetSn() == "044062320137": #6  044030620195
                     self.show_windows.append(self.ui.label_RGB_6)
@@ -180,6 +178,15 @@ class Main_Window(QtWidgets.QMainWindow):
                 elif DevInfo.GetSn() == "044062320105":  # 7 042101120056
                     self.show_windows.append(self.ui.label_RGB_7)
                     self.frameRates_label.append(self.ui.label_frameRates_7)
+
+
+                elif DevInfo.GetSn() == "042101120056": #inf 043051920299
+                    self.show_windows.append(self.ui.label_infrared)
+                    self.frameRates_label.append(self.ui.label_frameRates_inf)
+
+                elif DevInfo.GetSn() == "043051920299": #8 044011420148
+                    self.show_windows.append(self.ui.label_RGB_1D)
+                    self.frameRates_label.append(self.ui.label_frameRates_1D)
 
 
                 process = Process(target=run_camera, args=(DevInfo,child_conn,stop_event,self.NS,self.record_save,self.frameRates,self.ROI))
@@ -267,33 +274,33 @@ class Main_Window(QtWidgets.QMainWindow):
             print("Exception", e)
             print("Process event failed")
 
-        #ZED相机########################################################################################
-        try:
-            parent_conn, child_conn = Pipe()  # 设置管道
-            parent_conn_2, child_conn_2 = Pipe()  # 设置管道
-            stop_event = Event()  # 设置停止event
-            print("ZED设备")
-            # 记录每个设备的储存标志位 0显示 1缓存后保存
-            self.record_save["ZED"] = 0
-            # 每个相机的帧率
-            self.frameRates["ZED"] = 0
-
-            process = Process(target=runZED, args=(child_conn, child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
-            process.start()
-
-            self.show_windows.append(self.ui.label_ZED_RGB)
-            self.show_windows.append(self.ui.label_ZED_Depth)
-            self.frameRates_label.append(self.ui.label_frameRates_ZED)
-            # self.frameRates_label.append(self.ui.label_frameRates_ZED_2)
-
-            self.parent_conns.append(parent_conn)
-            self.parent_conns.append(parent_conn_2)
-            self.stop_events.append(stop_event)
-            self.processes.append(process)
-
-        except Exception as e:
-            print("Exception", e)
-            print("Process ZED failed")
+        # #ZED相机########################################################################################
+        # try:
+        #     parent_conn, child_conn = Pipe()  # 设置管道
+        #     parent_conn_2, child_conn_2 = Pipe()  # 设置管道
+        #     stop_event = Event()  # 设置停止event
+        #     print("ZED设备")
+        #     # 记录每个设备的储存标志位 0显示 1缓存后保存
+        #     self.record_save["ZED"] = 0
+        #     # 每个相机的帧率
+        #     self.frameRates["ZED"] = 0
+        #
+        #     process = Process(target=runZED, args=(child_conn, child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
+        #     process.start()
+        #
+        #     self.show_windows.append(self.ui.label_ZED_RGB)
+        #     self.show_windows.append(self.ui.label_ZED_Depth)
+        #     self.frameRates_label.append(self.ui.label_frameRates_ZED)
+        #     # self.frameRates_label.append(self.ui.label_frameRates_ZED_2)
+        #
+        #     self.parent_conns.append(parent_conn)
+        #     self.parent_conns.append(parent_conn_2)
+        #     self.stop_events.append(stop_event)
+        #     self.processes.append(process)
+        #
+        # except Exception as e:
+        #     print("Exception", e)
+        #     print("Process ZED failed")
 
 
 
