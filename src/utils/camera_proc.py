@@ -102,6 +102,8 @@ class camera_task:
             camera ="RGB_6"
         elif self.DevInfo.GetSn()=="044062320105":
             camera="RGB_7"
+        elif self.DevInfo.GetSn()=="042101120056":
+            camera="RGB_8"
 
 
         path=self.NS.save_id_path
@@ -138,6 +140,8 @@ class camera_task:
             setROI(self.hCamera, 800, 800, 100, 112)
         elif self.DevInfo.GetSn()=="044062320105":
             setROI(self.hCamera, 800, 800, 380, 112)
+        elif self.DevInfo.GetSn()=="042101120056": #inf
+            setROI(self.hCamera, 1024, 1024, 78, 0)
 
 
     def run(self,pipe,stop_event):
@@ -195,6 +199,9 @@ class camera_task:
                 elif self.DevInfo.GetSn() == "044030620196":
                     pass
                 elif self.DevInfo.GetSn() == "043051920299":
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
+                    frame=cv2.flip(frame,1)
+                elif self.DevInfo.GetSn() == "042101120056":
                     frame = cv2.rotate(frame, cv2.ROTATE_180)
                     frame=cv2.flip(frame,1)
                     # pass

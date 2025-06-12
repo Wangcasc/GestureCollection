@@ -290,8 +290,8 @@ def main():
         err = cam.grab(runtime)
         if err == sl.ERROR_CODE.SUCCESS:  # Check that a new image is successfully acquired
             num_frames += 1
-            # cam.retrieve_image(mat, sl.VIEW.LEFT)  # Retrieve left image
-            cam.retrieve_image(mat, sl.VIEW.DEPTH)
+            cam.retrieve_image(mat, sl.VIEW.LEFT)  # Retrieve left image
+            # cam.retrieve_image(mat, sl.VIEW.DEPTH)
             cvImage = mat.get_data()  # Convert sl.Mat to cv2.Mat
 
             # Display FPS

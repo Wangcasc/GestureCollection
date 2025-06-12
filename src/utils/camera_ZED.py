@@ -29,8 +29,11 @@ class ZEDTask:
 
         init_parameters = sl.InitParameters()
         init_parameters.camera_resolution = sl.RESOLUTION.HD720  # 相机分辨率设置
-        init_parameters.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+        init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
         init_parameters.camera_fps = 60
+        init_parameters.coordinate_units = sl.UNIT.METER
+        init_parameters.depth_minimum_distance = 0.15  # Set the minimum depth perception distance to 15cm
+        init_parameters.depth_maximum_distance = 7  # Set the maximum depth perception distance to 40m
         # parse_args(init_parameters)
 
         # self.zed.set_camera_settings(sl.VIDEO_SETTINGS.EXPOSURE, 50)
@@ -95,15 +98,16 @@ class ZEDTask:
             os.mkdir(sample_camera_path_2)
 
         for index, img in enumerate(self.RGB_buffer):
-            img_path = os.path.join(sample_camera_path_1, '%03d.jpg' % (index + 1))
-            img_path2 = os.path.join(sample_camera_path_2, '%03d.jpg' % (index + 1))
-            # cv2.imshow("{}".format(camera), img)
-            # cv2.waitKey(1)
-            # print("img_path:",img_path)
-            cv2.imwrite(img_path, img)
-            cv2.imwrite(img_path2, self.Depth_buffer[index])
+            if index<120:
+                img_path = os.path.join(sample_camera_path_1, '%03d.jpg' % (index + 1))
+                img_path2 = os.path.join(sample_camera_path_2, '%03d.jpg' % (index + 1))
+                # cv2.imshow("{}".format(camera), img)
+                # cv2.waitKey(1)
+                # print("img_path:",img_path)
+                cv2.imwrite(img_path, img)
+                cv2.imwrite(img_path2, self.Depth_buffer[index])
 
-
+        self.NS.ZED_saved=True
         self.RGB_buffer = []
         self.Depth_buffer = []
 
@@ -148,19 +152,23 @@ class ZEDTask:
                         num_frames=0
                         start_time=time.time()
 
-                    print("fps:",fps)
+                    # print("fps:",fps)
                     # print(num_frames)
 
                     if num_frames % 2 == 0:
 
+
                         frame_show = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
                         frame_show = cv2.resize(frame_show, (320,160))
                         pipe.send(frame_show)
-                        frame_show_2=cv2.cvtColor(depth_image, cv2.COLOR_BGR2RGB)
 
+                        frame_show_2=cv2.cvtColor(depth_image, cv2.COLOR_BGR2RGB)
                         frame_show_2= cv2.resize(frame_show_2, (160,160))
                         pipe2.send(frame_show_2)
                         self.frameRates["ZED"] = fps
+                        # cv2.imshow("depth",frame_show_2)
+                        # cv2.imshow("stereo",frame_show)
+                        # cv2.waitKey(1)
                         # print("fps:", fps)
 
 
@@ -177,7 +185,7 @@ class ZEDTask:
                         if len(self.RGB_buffer) == 1:
                             start_time2 = time.time()
                         # print(len(self.imgs_buffer))
-                        if len(self.RGB_buffer) == self.NS.sample_frame:
+                        if len(self.RGB_buffer) == 120:
                             end_time2 = time.time()
                             print("采集完成，耗时：",end_time2-start_time2)
                             self.executor.submit(self.save_video)

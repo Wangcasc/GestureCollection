@@ -110,10 +110,10 @@ class EventCamera:
             color_image=self.visualizer.generateImage(event_slice)
             # cv2.imshow("Preview", color_image)
             # cv2.waitKey(1)
-            color_image = color_image[:, 80:560, :]
+            color_image = color_image[:, 0:480, :]
             frame_show = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
             frame_show = cv2.resize(frame_show, (160, 160))
-            frame_show = cv2.rotate(frame_show, cv2.ROTATE_180)
+            # frame_show = cv2.rotate(frame_show, cv2.ROTATE_180)
             # print("frame_show.shape",frame_show.shape)
             self.pipe.send(frame_show)
 

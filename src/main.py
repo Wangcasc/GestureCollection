@@ -49,14 +49,15 @@ class Main_Window(QtWidgets.QMainWindow):
         self.ROI=Manager().dict() #用于进程间通信Manager字典,记录各个相机的ROI
 
 
-
-
         #采样设置##################
         #采样帧数
-        self.NS.sample_frame=int(self.ui.lineEdit_sample_frame.text())
+        self.NS.sample_frame=240 #int(self.ui.lineEdit_sample_frame.text())
 
         # 采样进度百分比
         self.NS.sampled= 0
+
+        # ZED保存标志
+        self.NS.ZED_saved=False
 
 
         print('采样帧数为{}'.format(self.NS.sample_frame))
@@ -115,6 +116,8 @@ class Main_Window(QtWidgets.QMainWindow):
         self.ui.pushButton_regist.clicked.connect(self.regist)
         #删除
         self.ui.pushButton_del.clicked.connect(self.del_sample)
+        #统计
+        self.ui.pushButton_analyze.clicked.connect(self.analyze)
 
 
 
@@ -185,8 +188,8 @@ class Main_Window(QtWidgets.QMainWindow):
                     self.frameRates_label.append(self.ui.label_frameRates_inf)
 
                 elif DevInfo.GetSn() == "043051920299": #8 044011420148
-                    self.show_windows.append(self.ui.label_RGB_1D)
-                    self.frameRates_label.append(self.ui.label_frameRates_1D)
+                    self.show_windows.append(self.ui.label_infrared)
+                    self.frameRates_label.append(self.ui.label_frameRates_inf)
 
 
                 process = Process(target=run_camera, args=(DevInfo,child_conn,stop_event,self.NS,self.record_save,self.frameRates,self.ROI))
@@ -194,7 +197,7 @@ class Main_Window(QtWidgets.QMainWindow):
                 self.parent_conns.append(parent_conn)
                 self.stop_events.append(stop_event)
                 self.processes.append(process)
-                # time.sleep(1)
+                time.sleep(1)
 
 
 
@@ -274,33 +277,34 @@ class Main_Window(QtWidgets.QMainWindow):
             print("Exception", e)
             print("Process event failed")
 
-        # #ZED相机########################################################################################
-        # try:
-        #     parent_conn, child_conn = Pipe()  # 设置管道
-        #     parent_conn_2, child_conn_2 = Pipe()  # 设置管道
-        #     stop_event = Event()  # 设置停止event
-        #     print("ZED设备")
-        #     # 记录每个设备的储存标志位 0显示 1缓存后保存
-        #     self.record_save["ZED"] = 0
-        #     # 每个相机的帧率
-        #     self.frameRates["ZED"] = 0
-        #
-        #     process = Process(target=runZED, args=(child_conn, child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
-        #     process.start()
-        #
-        #     self.show_windows.append(self.ui.label_ZED_RGB)
-        #     self.show_windows.append(self.ui.label_ZED_Depth)
-        #     self.frameRates_label.append(self.ui.label_frameRates_ZED)
-        #     # self.frameRates_label.append(self.ui.label_frameRates_ZED_2)
-        #
-        #     self.parent_conns.append(parent_conn)
-        #     self.parent_conns.append(parent_conn_2)
-        #     self.stop_events.append(stop_event)
-        #     self.processes.append(process)
-        #
-        # except Exception as e:
-        #     print("Exception", e)
-        #     print("Process ZED failed")
+        #ZED相机########################################################################################
+        try:
+            parent_conn, child_conn = Pipe()  # 设置管道
+            parent_conn_2, child_conn_2 = Pipe()  # 设置管道
+            stop_event = Event()  # 设置停止event
+            print("ZED设备")
+            # 记录每个设备的储存标志位 0显示 1缓存后保存
+            self.record_save["ZED"] = 0
+            # 每个相机的帧率
+            self.frameRates["ZED"] = 0
+
+            process = Process(target=runZED, args=(child_conn, child_conn_2, stop_event, self.NS, self.record_save, self.frameRates))
+            process.start()
+
+            self.show_windows.append(self.ui.label_Stereo)
+            self.show_windows.append(self.ui.label_Depth)
+            self.frameRates_label.append(self.ui.label_frameRates_Stereo)
+            # self.frameRates_label.append(self.ui.label_frameRates_ZED_2)
+
+            self.parent_conns.append(parent_conn)
+            self.parent_conns.append(parent_conn_2)
+
+            self.stop_events.append(stop_event)
+            self.processes.append(process)
+
+        except Exception as e:
+            print("Exception", e)
+            print("Process ZED failed")
 
 
 
@@ -403,9 +407,9 @@ class Main_Window(QtWidgets.QMainWindow):
                     if i <=len(self.DevList):
                         # print("帧率：{:.2f}".format(self.frameRates[self.DevList[i].GetSn()]))
                         self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates[self.DevList[i].GetSn()]))
-                    # else:
-                    #     self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["ZED"])) # 没理清楚pipe数量和label数量
-                    #     pass
+                    else:
+                        self.frameRates_label[i].setText("帧率：{:.2f}".format(self.frameRates["ZED"])) # 没理清楚pipe数量和label数量
+                        pass
 
             if self.fakeTime%500==0:
                 for i, DevInfo in enumerate(self.DevList):
@@ -419,7 +423,18 @@ class Main_Window(QtWidgets.QMainWindow):
                 self.ui.progressBar.setValue(int(self.NS.sampled*100))
                 if int(self.NS.sampled*100)==100:
                     self.NS.sampled=0
-                    QMessageBox.warning(self, "notice", "本次采集完成")
+
+            if self.NS.ZED_saved== True:
+                QMessageBox.warning(self, "Warning", "本次采集完成")
+                self.ui.textBrowser_log.append("本次采集完成")
+                self.ui.pushButton_regist.setEnabled(True)
+                self.NS.ZED_saved=False
+                self.analyze()
+
+
+
+
+
 
 
 
@@ -427,6 +442,21 @@ class Main_Window(QtWidgets.QMainWindow):
             # print("Exception:", e)
             # print("update_frames failed")
             pass
+
+    def analyze(self):
+        self.ui.textBrowser_log.clear()
+        self.ui.textBrowser_log.append("##########统计信息############")
+        img_path = self.fpath + '/img'
+        sample=self.scene + "_" + self.session + "_" + self.ID + "_" + self.gesture_type + "_" + self.sample_time
+        self.ui.textBrowser_log.append(sample)
+        self.save_id_path = img_path + '/' + sample
+        # 统计id下对数据数量
+        modalities = os.listdir(self.save_id_path)
+        for modality in modalities:
+            modality_path = self.save_id_path + "/" + modality
+            imgs=os.listdir(modality_path)
+            self.ui.textBrowser_log.append(modality+" : "+str(len(imgs)))
+
 
 
     def add_id(self):
@@ -457,6 +487,7 @@ class Main_Window(QtWidgets.QMainWindow):
                                              QMessageBox.Yes)
             if del_or_not == QMessageBox.No:
                 return
+        self.ui.pushButton_regist.setEnabled(False) #暂时禁用注册按键
 
         if not os.path.isdir(self.save_id_path):
             os.makedirs(self.save_id_path)
