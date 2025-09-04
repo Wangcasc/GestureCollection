@@ -1,0 +1,24 @@
+解决 Windows 时间同步问题
+在 A 和 B 电脑上执行以下步骤：
+cmd
+:: 以管理员身份运行 CMD
+:: 1. 启动 Windows 时间服务
+net start w32time
+
+:: 2. 配置时间服务器（替换为您的 NTP 服务器）
+w32tm /config /syncfromflags:manual /manualpeerlist:"pool.ntp.org" /update
+
+:: 3. 强制立即同步
+w32tm /resync /force
+
+:: 4. 检查同步状态
+w32tm /query /status
+
+
+验证时间同步：
+cmd
+:: 在 A 电脑上执行
+ping -4 b_computer_ip | findstr "Reply"
+
+:: 在 B 电脑上执行
+w32tm /stripchart /computer:a_computer_ip /dataonly /samples:5
