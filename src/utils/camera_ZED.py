@@ -83,7 +83,7 @@ class ZEDTask:
             return cvImage,cvDepthImage,True
 
         except Exception as e:
-            print(e)
+            # print(e)
             return None, None,None,None,False
 
 
@@ -104,14 +104,16 @@ class ZEDTask:
                 # cv2.imshow("{}".format(camera), img)
                 # cv2.waitKey(1)
                 # print("img_path:",img_path)
+
                 cv2.imwrite(img_path, img)
                 cv2.imwrite(img_path2, self.Depth_buffer[index])
 
-        self.NS.ZED_saved=True
+
         self.RGB_buffer = []
         self.Depth_buffer = []
 
         print('zed采集完成')
+        self.NS.ZED_saved = True
 
     def run(self,pipe,pipe2,stop_event):
         num=0
@@ -132,6 +134,10 @@ class ZEDTask:
                 # print(num_frames)
 
                 color_image,depth_image ,ret= self.grab()
+
+                # 都上下翻转一下
+                color_image = cv2.flip(color_image, 0)
+                depth_image = cv2.flip(depth_image, 0)
 
                 # color_image是
 
@@ -171,12 +177,23 @@ class ZEDTask:
                         # cv2.waitKey(1)
                         # print("fps:", fps)
 
+                    #
+                    # print(color_image.shape)
+                    # 丢掉arpha通道
+                    color_image = color_image[:, :, :3]
+                    # 720, 2560 是两个720,1280的图片，中心裁剪成两个720,800
+                    color_image1 = color_image[:, 240:1040, :]
+                    color_image2 = color_image[:, 1280 + 240:1280 + 1040, :]
+                    color_image = np.concatenate((color_image1, color_image2), axis=1)
+
+                    depth_image=depth_image[:, :, :3]
+                    depth_image1 = depth_image[:, 240:1040, :]
 
                     if self.record_save["ZED"] == 1:
                         num+=1
 
                         self.RGB_buffer.append(color_image.copy())
-                        self.Depth_buffer.append(depth_image.copy())
+                        self.Depth_buffer.append(depth_image1.copy())
                         # self.Depth_Color_buffer.append(depth_color_image.copy())
                         # self.PCD_buffer.append(pcd.copy())
 

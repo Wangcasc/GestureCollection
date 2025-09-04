@@ -147,7 +147,7 @@ class EventCamera:
     #
     #             self.writer.writeEvents(events, streamName='events')
     def save_event(self):
-        try:
+        # try:
             print("Saving events...")
 
 
@@ -166,10 +166,10 @@ class EventCamera:
             # print(self.event_store.size())
             #重新初始化event_store
             self.event_store = dv.EventStore()
-
-
-        except Exception as e:
-            print("Failed to save events: ", e)
+        #
+        #
+        # except Exception as e:
+        #     print("Failed to save events: ", e)
 
 
 
@@ -179,33 +179,34 @@ class EventCamera:
         self.start_time = time.time()
         num_events = 0
         while True:
-            try:
-                events = self.camera.getNextEventBatch()
-                # print(num_events)
-                if events is not None:
+            # try:
+            events = self.camera.getNextEventBatch()
+            # print(num_events)
+            if events is not None:
 
 
-                    # 切片展示
-                    self.slicer.accept(events)
-                    # print("events.shape",events)
+                # 切片展示
+                self.slicer.accept(events)
+                # print("events.shape",events)
 
-                    if self.record_save["event"] == 1:
-                        #触发事件存储
-                        num_events += 1
-                        #记录开始时间
-                        if num_events == 1:
-                            start_time = time.time()
-                        self.event_store.add(events)
-                        # print(len(self.event_store))
+                if self.record_save["event"] == 1:
+                    #触发事件存储
+                    num_events += 1
+                    #记录开始时间
+                    if num_events == 1:
+                        start_time = time.time()
+                    self.event_store.add(events)
+                    # print(len(self.event_store))
 
-                        current_time = time.time()
-                        # print(current_time - start_time)
-                        if current_time - start_time >= self.cache_duration_seconds:
-                            self.record_save["event"] = 0
-                            self.executor.submit(self.save_event)
-                            num_events = 0
-            except Exception as e:
-                print("Failed to run event camera: ", e)
+                    current_time = time.time()
+                    # print(current_time - start_time)
+                    if current_time - start_time >= self.cache_duration_seconds:
+                        print("Saving events to disk...")
+                        self.record_save["event"] = 0
+                        self.executor.submit(self.save_event)
+                        num_events = 0
+            # except Exception as e:
+            #     print("Failed to run event camera: ", e)
 
 
         print("Event camera stopped")
@@ -224,7 +225,7 @@ def runEventCamera(pipe,stop_event,NS,record_save,frameRates):
 if __name__ == '__main__':
     # camera = dv.io.CameraCapture()
     visualizer = dv.visualization.EventVisualizer((640,480))
-    reader = dv.io.MonoCameraRecording(r"C:\Users\Administrator.DESKTOP-ATGBNLB\Desktop\dataCollectionCode\GestureCollection\data\img\1_1_1_1_1\events\event.aedat4")
+    reader = dv.io.MonoCameraRecording(r"C:\Users\Administrator.DESKTOP-ATGBNLB\Desktop\dataCollectionCode\GestureCollection\data\img\1_21_1_10_4\events\event.aedat4")
 
     cv2.namedWindow("Preview", cv2.WINDOW_NORMAL)
     # Run the loop while camera is still connected

@@ -9,6 +9,9 @@ import concurrent.futures as futures
 import os
 
 import utils.mvsdk as mvsdk
+import socket
+# from multiprocessing import Manager, Process
+
 
 def setROI(hCamera,iWidth,iHeight,iHOffsetFOV,iVOffsetFOV):
     sRoiReslution = mvsdk.tSdkImageResolution()  # 实例化变量
@@ -21,6 +24,12 @@ def setROI(hCamera,iWidth,iHeight,iHOffsetFOV,iVOffsetFOV):
     sRoiReslution.iVOffsetFOV = iVOffsetFOV
     mvsdk.CameraSetImageResolution(hCamera, sRoiReslution)
 
+
+# 创建共享字典
+# manager = Manager()
+# shared_dict = manager.dict()
+# shared_dict["ID_DIR"] = "000"  # 初始值
+
 class camera_task:
     def __init__(self,DevInfo,NS,record_save,frameRates,ROI):
         self.DevInfo = DevInfo
@@ -28,6 +37,8 @@ class camera_task:
         self.record_save = record_save
         self.frameRates = frameRates
         self.ROI = ROI
+        # self.shared_data = shared_data
+        # self.ID_DIR=ID_DIR
         #缓存
         self.imgs_buffer = []
         self.executor = futures.ThreadPoolExecutor(max_workers=1)
@@ -119,32 +130,65 @@ class camera_task:
 
 
         self.imgs_buffer = []
+        if self.DevInfo.GetSn() == "044011420148":
+            self.NS.ZED_saved = True
 
         print('{}采集完成'.format(camera))
         # time.sleep(0.1)
 
     def setCrop(self):
         if self.DevInfo.GetSn()=="044011420148":   #041182220233  044062320120
-            setROI(self.hCamera, 1024, 1024, 448, 112)
+            setROI(self.hCamera, 1024, 1024, 300, 112)
         elif self.DevInfo.GetSn()=="044030620196":  #044062320105   042092320674
-            setROI(self.hCamera, 800, 800, 240, 112)
+            setROI(self.hCamera, 800, 800, 320, 112)
         elif self.DevInfo.GetSn()=="044062320120":
-            setROI(self.hCamera, 800, 800, 240, 112)
+            setROI(self.hCamera, 800, 800, 100, 112)
         elif self.DevInfo.GetSn()=="044062320129":
-            setROI(self.hCamera, 800, 800, 200, 312)
+            setROI(self.hCamera, 800, 800, 140, 100)
         elif self.DevInfo.GetSn()=="044030620195":
             setROI(self.hCamera, 800, 800, 240, 112)
         elif self.DevInfo.GetSn()=="043051920299":
-            setROI(self.hCamera, 1024, 1024, 560+120, 140)
+            setROI(self.hCamera, 1024, 1024, 560, 140)
         elif self.DevInfo.GetSn()=="044062320137":
             setROI(self.hCamera, 800, 800, 100, 112)
         elif self.DevInfo.GetSn()=="044062320105":
-            setROI(self.hCamera, 800, 800, 380, 112)
+            setROI(self.hCamera, 800, 800, 380, 200)
         elif self.DevInfo.GetSn()=="042101120056": #inf
-            setROI(self.hCamera, 1024, 1024, 78, 0)
+            setROI(self.hCamera, 1024, 1024, 0, 0)
 
+    def sync_client(self, host_b, port=65432, id_dir="1_0_999_0_0", num_frames=120, delay=5.0):
+        """向B电脑发送同步指令"""
+        # 计算开始时间（当前时间 + 延迟）
+        start_time = time.time() + delay
+
+        # 连接到B电脑
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((host_b, port))
+            print(f"已连接到 {host_b}:{port}")
+
+            # 发送指令：id_dir,start_time,num_frames
+            message = f"{id_dir},{start_time},{num_frames}"
+            s.sendall(message.encode())
+            print(f"已发送同步指令: {message}")
+
+        # 在此处添加A电脑自己的摄像头采集代码
+        # 确保在相同的start_time开始采集
+        print(f"A电脑将在 {delay} 秒后开始采集...")
+        # 等待到指定时间
+        while time.time() < start_time:
+            pass
+
+        #开始采集
 
     def run(self,pipe,stop_event):
+        # global ID_DIR
+        # 配置参数
+        HOST_B = "192.168.1.107"  # B电脑的IP地址
+        NUM_FRAMES = 120  # 采集帧数
+        DELAY = 2.0  # 延迟时间（秒）
+        is_send=1 #是否可以发送b电脑
+        # ID_DIR = "1_0_999_0_0"  # 由A电脑指定的目录名
+
         num_frames = 0
         start_time = time.time()
         while not stop_event.is_set():
@@ -213,6 +257,14 @@ class camera_task:
                     self.frameRates[self.DevInfo.GetSn()] = fps
 
                 if self.record_save[self.DevInfo.GetSn()]==1:
+                    if is_send==1 and self.DevInfo.GetSn() == "044011420148":
+                        # current_id = self.shared_data["ID_DIR"]
+                        current_id = "111"
+
+
+                        self.sync_client(host_b=HOST_B, id_dir=current_id, num_frames=NUM_FRAMES, delay=DELAY)
+                        print(current_id)
+                        is_send=0
                     self.imgs_buffer.append(frame)
                     # 记录采集进度
                     if self.DevInfo.GetSn() == "044011420148":
@@ -226,6 +278,8 @@ class camera_task:
                         self.executor.submit(self.save_video)
 
                         self.record_save[self.DevInfo.GetSn()] = 0
+
+                        is_send=1
 
             except mvsdk.CameraException as e:
                 if e.error_code != mvsdk.CAMERA_STATUS_TIME_OUT:
@@ -244,8 +298,14 @@ class camera_task:
 #     camera.run(pipe,stop_event)
     
 def run_camera(devinfo,pipe,stop_event,NS,record_save,frameRates,ROI):
+    # global shared_dict
     camera = camera_task(devinfo,NS,record_save,frameRates,ROI)
-    camera.run(pipe,stop_event) 
+    camera.run(pipe,stop_event)
+
+# 修改函数
+# def change_id_dir(new_id):
+#     shared_dict["ID_DIR"] = new_id
+#     print("ID_DIR 更新为:", shared_dict["ID_DIR"])
     
     
 if __name__ == "__main__":
